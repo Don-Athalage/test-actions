@@ -214,3 +214,43 @@ jobs:
       - post-artifact-push-job-2
     steps:
       - run: echo "Wait on Image 1"
+
+  dispatch-1:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - wait-on-images-2
+    steps:
+      - run: echo "Dispatch 1"
+
+  dispatch-2:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - wait-on-images-2
+    steps:
+      - run: echo "Dispatch 2"
+
+  dispatch-3:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - wait-on-images-2
+    steps:
+      - run: echo Dispatch 3"
+
+  dispatch-4:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - wait-on-images-1
+    steps:
+      - run: echo "Dispatch 4"
+
+  dispatch-5:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - wait-on-images-1
+    steps:
+      - run: echo "Dispatch 5"
