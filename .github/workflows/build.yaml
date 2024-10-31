@@ -20,6 +20,7 @@ jobs:
 
   wait-on-prebuild-jobs:
     runs-on: ubuntu-latest
+    if: !failure()
     needs:
       - prebuild-job-1
       - prebuild-job-2
