@@ -27,12 +27,26 @@ jobs:
     steps:
       - run: echo "running prebuild job 2"
 
+  prebuild-job-3:
+    if: inputs.run-prebuild
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "running prebuild job 3"
+
+  prebuild-job-4:
+    if: inputs.run-prebuild
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "running prebuild job 4"
+
   wait-on-prebuild-jobs:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    if: ${{ always() && !failure() && !cancelled() }}
     needs:
       - prebuild-job-1
       - prebuild-job-2
+      - prebuild-job-3
+      - prebuild-job-4
     steps:
       - run: echo "All prebuild jobs compete"
 
