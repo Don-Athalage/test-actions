@@ -13,6 +13,9 @@ on:
       run-artifact-push:
         type: boolean
         default: true
+      dispatch-deployments:
+        type: boolean
+        default: true
 
 jobs:
   prebuild-job-1:
@@ -176,7 +179,7 @@ jobs:
     needs:
       - artifact-push-job-1
     steps:
-      - run: echo "Push Image 1"
+      - run: echo "Post Push Image 1"
 
   post-artifact-push-job-2:
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
@@ -184,7 +187,7 @@ jobs:
     needs:
       - artifact-push-job-2
     steps:
-      - run: echo "Push Image 2"
+      - run: echo "Post Push Image 2"
 
   post-artifact-push-job-3:
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
@@ -192,4 +195,22 @@ jobs:
     needs:
       - artifact-push-job-3
     steps:
-      - run: echo "Push Image 3"
+      - run: echo "Post Push Image 3"
+
+  # dispatch deployments
+  wait-on-images-1:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - artifact-push-job-1
+      - artifact-push-job-3
+    steps:
+      - run: echo "Wait on Image 1"
+
+  wait-on-images-2:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments
+    runs-on: ubuntu-latest
+    needs:
+      - artifact-push-job-2
+    steps:
+      - run: echo "Wait on Image 1"
