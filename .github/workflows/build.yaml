@@ -20,7 +20,7 @@ jobs:
 
   wait-on-prebuild-jobs:
     runs-on: ubuntu-latest
-    if: !failure()
+    if: ${{ needs.prebuild-job-1.result != 'failed' && needs.prebuild-job-1.result != 'failed'}}
     needs:
       - prebuild-job-1
       - prebuild-job-2
