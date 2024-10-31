@@ -101,3 +101,27 @@ jobs:
       - post-build-job-3
     steps:
       - run: echo "Quality Image 3"
+
+  post-quality-job-1:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - quality-job-1
+    steps:
+      - run: echo "Post Quality Image 1"
+
+  post-quality-job-2:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - quality-job-2
+    steps:
+      - run: echo "Post Quality Image 2"
+
+  post-quality-job-3:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - quality-job-3
+    steps:
+      - run: echo "Post Quality Image 3"
