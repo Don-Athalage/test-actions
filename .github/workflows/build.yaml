@@ -1,13 +1,19 @@
 on:
   workflow_dispatch:
+    inputs:
+      run-prebuild:
+        type: boolean
+        default: true
 
 jobs:
   prebuild-job-1:
+    if: inputs.run-prebuild
     runs-on: ubuntu-latest
     steps:
       - run: echo "running prebuild job 1"
 
   prebuild-job-2:
+    if: inputs.run-prebuild
     runs-on: ubuntu-latest
     steps:
       - run: echo "running prebuild job 2"
