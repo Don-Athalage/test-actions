@@ -41,7 +41,7 @@ jobs:
 
   wait-on-prebuild-jobs:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-prebuild
     needs:
       - prebuild-job-1
       - prebuild-job-2
@@ -75,7 +75,7 @@ jobs:
       - run: echo "Building Image 3"
 
   post-build-job-1:
-    if: inputs.run-post-build
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-post-build
     runs-on: ubuntu-latest
     needs:
       - build-job-1
@@ -83,7 +83,7 @@ jobs:
       - run: echo "Post Build Image 1"
 
   post-build-job-2:
-    if: inputs.run-post-build
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-post-build
     runs-on: ubuntu-latest
     needs:
       - build-job-2
@@ -91,7 +91,7 @@ jobs:
       - run: echo "Post Build Image 2"
 
   post-build-job-3:
-    if: inputs.run-post-build
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-post-build
     runs-on: ubuntu-latest
     needs:
       - build-job-3
@@ -99,7 +99,7 @@ jobs:
       - run: echo "Post Build Image 3"
 
   quality-job-1:
-    if: inputs.run-quality
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - post-build-job-1
@@ -107,7 +107,7 @@ jobs:
       - run: echo "Quality Image 1"
 
   quality-job-2:
-    if: inputs.run-quality
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - post-build-job-2
@@ -115,7 +115,7 @@ jobs:
       - run: echo "Quality Image 2"
 
   quality-job-3:
-    if: inputs.run-quality
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - post-build-job-3
@@ -123,6 +123,7 @@ jobs:
       - run: echo "Quality Image 3"
 
   post-quality-job-1:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - quality-job-1
@@ -130,6 +131,7 @@ jobs:
       - run: echo "Post Quality Image 1"
 
   post-quality-job-2:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - quality-job-2
@@ -137,6 +139,7 @@ jobs:
       - run: echo "Post Quality Image 2"
 
   post-quality-job-3:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-quality
     runs-on: ubuntu-latest
     needs:
       - quality-job-3
@@ -144,7 +147,7 @@ jobs:
       - run: echo "Post Quality Image 3"
 
   artifact-push-job-1:
-    if: inputs.run-artifact-push
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - post-quality-job-1
@@ -152,7 +155,7 @@ jobs:
       - run: echo "Push Image 1"
 
   artifact-push-job-2:
-    if: inputs.run-artifact-push
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - post-quality-job-2
@@ -160,7 +163,7 @@ jobs:
       - run: echo "Push Image 2"
 
   artifact-push-job-3:
-    if: inputs.run-artifact-push
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - post-quality-job-3
@@ -168,6 +171,7 @@ jobs:
       - run: echo "Push Image 3"
 
   post-artifact-push-job-1:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - artifact-push-job-1
@@ -175,6 +179,7 @@ jobs:
       - run: echo "Push Image 1"
 
   post-artifact-push-job-2:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - artifact-push-job-2
@@ -182,6 +187,7 @@ jobs:
       - run: echo "Push Image 2"
 
   post-artifact-push-job-3:
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.run-artifact-push
     runs-on: ubuntu-latest
     needs:
       - artifact-push-job-3
