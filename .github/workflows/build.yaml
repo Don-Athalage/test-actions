@@ -243,7 +243,7 @@ jobs:
     needs:
       - wait-on-images-2
     steps:
-      - run: echo Dispatch 3"
+      - run: echo "Dispatch 3"
 
   dispatch-4:
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.dispatch-deployments && inputs.run-artifact-push
