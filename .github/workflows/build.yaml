@@ -125,3 +125,51 @@ jobs:
       - quality-job-3
     steps:
       - run: echo "Post Quality Image 3"
+
+  artifact-push-job-1:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - post-quality-job-1
+    steps:
+      - run: echo "Push Image 1"
+
+  artifact-push-job-2:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - post-quality-job-2
+    steps:
+      - run: echo "Push Image 2"
+
+  artifact-push-job-3:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - post-quality-job-3
+    steps:
+      - run: echo "Push Image 3"
+
+  post-artifact-push-job-1:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - artifact-push-job-1
+    steps:
+      - run: echo "Push Image 1"
+
+  post-artifact-push-job-2:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - artifact-push-job-2
+    steps:
+      - run: echo "Push Image 2"
+
+  post-artifact-push-job-3:
+    if: inputs.run-quality
+    runs-on: ubuntu-latest
+    needs:
+      - artifact-push-job-3
+    steps:
+      - run: echo "Push Image 3"
