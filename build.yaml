@@ -1,0 +1,33 @@
+---
+apiVersion: ci.x.anz/v1alpha1
+kind: Build
+metadata:
+  name: transactions
+  workspace: fabric
+spec:
+  preBuild:
+    jobs:
+      - using: actions/go-test
+        with:
+          ARG1: abcd
+          ARG2: pqrs
+      - using: actions/sonarqube-test
+        with:
+          ARG1: abcd
+          ARG2: pqrs
+  build:
+    jobs:
+  postBuild:
+    jobs:
+  qualityCheck:
+    jobs:
+  postQualityCheck:
+    jobs:
+  pushArtifacts:
+    jobs:
+  postPushArtifacts:
+    jobs:
+  deploymentTriggers:
+    -
+---
+
