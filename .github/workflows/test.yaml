@@ -1,10 +1,12 @@
 on:
   release:
+    types:
+      - published
 
 jobs:
   on-prerelease:
     if: github.event.release.prerelease
-    runs-on: ubuntu-default
+    runs-on: ubuntu-latest
     steps:
       - name: Debug GitHub Event
         run: |
