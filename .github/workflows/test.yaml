@@ -1,0 +1,10 @@
+on:
+  release:
+
+jobs:
+  on-prerelease:
+    if: github.event.release.prerelease
+    runs-on: ubuntu-default
+    steps:
+      - run: echo "hello"
+        if: github.event.release.prerelease
