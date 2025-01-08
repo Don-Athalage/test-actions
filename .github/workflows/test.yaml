@@ -20,3 +20,10 @@ jobs:
     steps:
       - run: echo "hello"
         if: github.event.release.prerelease
+
+  on-prerelease2:
+    needs: always
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "hello"
+        if: github.event.release.prerelease
