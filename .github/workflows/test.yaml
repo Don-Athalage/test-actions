@@ -1,40 +1,9 @@
+name: Test
 on:
-  release:
-    types:
-      - published
+  push:
 
 jobs:
   needs:
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "hello"
-
-  always:
-    if: always()
-    runs-on: ubuntu-latest
-    needs: needs
-    steps:
-      - name: Finalize
-        run: |
-          if [[ "${{ needs.needs.result }}" == "success" || ${{ github.event_name }} != "pull_request" ]]; then
-            echo "All jobs succeeded"
-          else
-            echo "Required jobs failed or were skipped"
-            exit 1
-          fi
-
-  on-prerelease:
-    if: github.event.release.prerelease && always()
-    needs: always
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "hello"
-        if: github.event.release.prerelease
-
-  on-prerelease2:
-    needs: always
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "hello"
-        if: github.event.release.prerelease
