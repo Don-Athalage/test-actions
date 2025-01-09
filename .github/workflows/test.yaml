@@ -6,4 +6,10 @@ jobs:
   needs:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "hello3"
+      - name: "Randomly Fail"
+        run: |
+          if [ $((RANDOM % 2)) -eq 0 ]; then
+            echo "Failure";
+            exit 1;
+          fi
+          echo "Success";
