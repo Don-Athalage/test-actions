@@ -1,7 +1,5 @@
 on:
-  workflow_run:
-    workflows: ["Test"]
-    types: [completed]
+  deployment:
 
 jobs:
   deploy:
@@ -9,26 +7,4 @@ jobs:
     steps:
       - name: Output Caller Workflow Details
         run: |
-          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
-          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
-          STARTED_AT="${{ github.event.workflow_run.run_started_at }}"
-          BRANCH_NAME="${{ github.event.workflow_run.head_branch }}"
-          BRANCH_URL="https://github.com/${{ github.repository }}/tree/${BRANCH_NAME}"
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"
-
-          if [ "$CONCLUSION" == "success" ]; then
-            ICON=":white_check_mark:" # Success icon
-            STATUS="Deployment Succeeded"
-          else
-            ICON=":x:" # Failure icon
-            STATUS="Deployment Failed"
-          fi
-
-          # Output Slack message payload
-          echo "{
-            \"text\": \"${ICON} *Deployment Status: ${STATUS}*\n\n
-            *Workflow:* ${WORKFLOW_NAME}\n
-            *Branch:* <${BRANCH_URL}|${BRANCH_NAME}>\n
-            *Started At:* ${STARTED_AT}\n
-            *Details:* <${RUN_URL}|View Deployment>\"
-          }"
+          echo hello
