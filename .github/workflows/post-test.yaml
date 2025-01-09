@@ -24,8 +24,9 @@ jobs:
             STATUS="Deployment Failed"
           fi
 
+          # Output Slack message payload
           echo "{
-            \"text\": \"${ICON} *Deployment Status: ${STATUS}*\n
+            \"text\": \"${ICON} *Deployment Status: ${STATUS}*\n\n
             *Workflow:* ${WORKFLOW_NAME}\n
             *Branch:* <${BRANCH_URL}|${BRANCH_NAME}>\n
             *Started At:* ${STARTED_AT}\n
