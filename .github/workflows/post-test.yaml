@@ -8,4 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - run: echo ${{ github.event.workflow_run.conclusion }}
+      - name: Output Caller Workflow Details
+        run: |
+          echo "Run ID: ${{ github.event.workflow_run.id }}"
+          echo "Workflow Name: ${{ github.event.workflow_run.name }}"
+          echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Status: ${{ github.event.workflow_run.status }}"
