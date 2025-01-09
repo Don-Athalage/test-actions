@@ -1,10 +1,39 @@
+name: Deployment Event Listener
+
 on:
   deployment:
+    types: [created]
+  deployment_status:
+    types: [pending, success, failure, error]
 
 jobs:
-  deploy:
+  handle-deployment:
     runs-on: ubuntu-latest
     steps:
-      - name: Output Caller Workflow Details
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Handle Deployment Created
+        if: ${{ github.event_name == 'deployment' && github.event.action == 'created' }}
         run: |
-          echo hello
+          echo "Deployment created for environment: ${{ github.event.deployment.environment }}"
+
+      - name: Handle Deployment Pending
+        if: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.state == 'pending' }}
+        run: |
+          echo "Deployment is pending for environment: ${{ github.event.deployment.environment }}"
+
+      - name: Handle Deployment Success
+        if: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success' }}
+        run: |
+          echo "Deployment succeeded for environment: ${{ github.event.deployment.environment }}"
+
+      - name: Handle Deployment Failure
+        if: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.state == 'failure' }}
+        run: |
+          echo "Deployment failed for environment: ${{ github.event.deployment.environment }}"
+
+      - name: Handle Deployment Error
+        if: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.state == 'error' }}
+        run: |
+          echo "Deployment encountered an error for environment: ${{ github.event.deployment.environment }}"
