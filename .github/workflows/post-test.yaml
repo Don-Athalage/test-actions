@@ -14,3 +14,8 @@ jobs:
           echo "Workflow Name: ${{ github.event.workflow_run.name }}"
           echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
           echo "Status: ${{ github.event.workflow_run.status }}"
+          echo "Duration: $(( ($(date -d "${{ github.event.workflow_run.updated_at }}" +%s) - $(date -d "${{ github.event.workflow_run.run_started_at }}" +%s)) / 60 )) minutes"
+          echo "Head Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Head SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Event: ${{ github.event.workflow_run.event }}"
+          echo "Commit Message: ${{ github.event.workflow_run.head_commit.message }}"
