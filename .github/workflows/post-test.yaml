@@ -2,9 +2,7 @@ name: Deployment Event Listener
 
 on:
   deployment:
-    types: [created]
   deployment_status:
-    types: [pending, success, failure, error]
 
 jobs:
   handle-deployment:
