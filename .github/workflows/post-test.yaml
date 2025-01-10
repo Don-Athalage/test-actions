@@ -3,6 +3,9 @@ name: Deployment Event Listener
 on:
   deployment:
   deployment_status:
+  workflow_run:
+    workflows:
+      - Deploy*
 
 jobs:
   handle-deployment:

@@ -1,0 +1,8 @@
+name: Deploy test
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-default
