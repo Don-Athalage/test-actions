@@ -29,32 +29,57 @@ jobs:
       - name: Determine Status Icon and Message
         id: set-status
         run: |
-          case "$CONCLUSION" in
-            success)
-              echo "ICON=:white_check_mark:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=Succeeded" >> $GITHUB_ENV
-              ;;
-            failure)
-              echo "ICON=:x:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=Failed" >> $GITHUB_ENV
-              ;;
-            cancelled)
-              echo "ICON=:no_entry:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=Cancelled" >> $GITHUB_ENV
-              ;;
-            timed_out)
-              echo "ICON=:hourglass_flowing_sand:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=Timed Out" >> $GITHUB_ENV
-              ;;
-            in_progress)
-              echo "ICON=:arrow_forward:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=In Progress" >> $GITHUB_ENV
-              ;;
-            *)
-              echo "ICON=:grey_question:" >> $GITHUB_ENV
-              echo "STATUS_MESSAGE=Unknown Status" >> $GITHUB_ENV
-              ;;
-          esac
+          if [ "$STATUS" == "completed" ]; then
+            case "$CONCLUSION" in
+              success)
+                echo "ICON=:white_check_mark:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Succeeded" >> $GITHUB_ENV
+                ;;
+              failure)
+                echo "ICON=:x:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Failed" >> $GITHUB_ENV
+                ;;
+              cancelled)
+                echo "ICON=:no_entry:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Cancelled" >> $GITHUB_ENV
+                ;;
+              timed_out)
+                echo "ICON=:hourglass_flowing_sand:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Timed Out" >> $GITHUB_ENV
+                ;;
+              action_required)
+                echo "ICON=:warning:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Action Required" >> $GITHUB_ENV
+                ;;
+              neutral)
+                echo "ICON=:information_source:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Neutral" >> $GITHUB_ENV
+                ;;
+              skipped)
+                echo "ICON=:fast_forward:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Skipped" >> $GITHUB_ENV
+                ;;
+              stale)
+                echo "ICON=:warning:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Stale" >> $GITHUB_ENV
+                ;;
+              *)
+                echo "ICON=:grey_question:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Unknown Conclusion" >> $GITHUB_ENV
+                ;;
+            esac
+          else
+            case "$STATUS" in
+              in_progress)
+                echo "ICON=:arrow_forward:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=In Progress" >> $GITHUB_ENV
+                ;;
+              *)
+                echo "ICON=:grey_question:" >> $GITHUB_ENV
+                echo "STATUS_MESSAGE=Unknown Status" >> $GITHUB_ENV
+                ;;
+            esac
+          fi
 
       - name: Construct Slack Message
         id: set-message
