@@ -15,7 +15,7 @@ jobs:
   prepare-message:
     outputs:
       message: ${{ steps.set-message.outputs.MESSAGE }}
-    runs-on: anzx-default
+    runs-on: ubuntu-latest
     steps:
       - name: Extract Workflow Details
         id: extract-details
