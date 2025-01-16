@@ -12,20 +12,14 @@ jobs:
         id: extract-details
         run: |
           echo "🚀 Deployment Details:"
-          echo "Repository: ${{ github.repository }}"
           echo "Environment: ${{ github.event.deployment.environment }}"
-          echo "Description: ${{ github.event.deployment.description }}"
           echo "Triggered By: ${{ github.event.deployment.creator.login }}"
-          echo "Commit SHA: ${{ github.event.deployment.sha }}"
-          echo "Branch: ${{ github.event.deployment.ref }}"
           echo "Deployment ID: ${{ github.event.deployment.id }}"
-          echo "URL: ${{ github.event.deployment.payload.url }}"
+          echo "Task: ${{ github.event.deployment.task }}"
 
       - name: Extract Status Details
         if: ${{ github.event_name == 'deployment_status' }}
         run: |
           echo "📋 Deployment Status:"
           echo "Status: ${{ github.event.deployment_status.state }}"
-          echo "Description: ${{ github.event.deployment_status.description }}"
           echo "Log URL: ${{ github.event.deployment_status.target_url }}"
-          echo "Updated By: ${{ github.actor }}"
