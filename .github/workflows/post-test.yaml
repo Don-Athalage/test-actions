@@ -1,7 +1,6 @@
 name: Deployment Event Listener
 
 on:
-  deployment:
   deployment_status:
 
 jobs:
@@ -12,12 +11,11 @@ jobs:
         id: extract-details
         run: |
           echo "🚀 Deployment Details:"
-          echo "Environment: ${{ github.event.deployment.environment }}"
-          echo "Triggered By: ${{ github.event.deployment.creator.login }}"
+          echo "ENVIRONMENT=${{ github.event.deployment.environment }}" >> $GITHUB_ENV
+          echo "ACTOR=${{ github.event.deployment.creator.login }}" >> $GITHUB_ENV
 
       - name: Extract Status Details
         if: ${{ github.event_name == 'deployment_status' }}
         run: |
-          echo "Status: ${{ github.event.deployment_status.state }}"
-          echo "Target URL: ${{ github.event.deployment_status.target_url }}"
-          echo "Log URL: ${{ github.event.deployment_status.log_url }}"
+          echo "STATUS=${{ github.event.deployment_status.state }}" >> $GITHUB_ENV
+          echo "URL=${{ github.event.deployment_status.target_url }}" >> $GITHUB_ENV
