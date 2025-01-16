@@ -40,6 +40,7 @@ jobs:
               ;;
           esac
           MESSAGE="$ICON Deployment to $ENVIRONMENT $URL: *$STATUS* (Triggered by $ACTOR)"
+          echo $MESSAGE
           echo "MESSAGE=$MESSAGE" >> $GITHUB_OUTPUT
 
   # notify:
