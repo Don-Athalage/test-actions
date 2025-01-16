@@ -42,12 +42,3 @@ jobs:
           MESSAGE="$ICON Deployment to $ENVIRONMENT $URL: *$STATUS* (Triggered by $ACTOR)"
           echo $MESSAGE
           echo "MESSAGE=$MESSAGE" >> $GITHUB_OUTPUT
-
-  # notify:
-  #   needs: prepare-message
-  #   uses: anzx/github-reusable-workflows/.github/workflows/notification-hub.yaml@main
-  #   with:
-  #     isSlack: true
-  #     slackChannels: tms-deployment-notifications-${{ github.event.deployment.environment }}
-  #     slackMessage: ${{ needs.prepare-message.outputs.message }}
-  #     slackPrivate: true
