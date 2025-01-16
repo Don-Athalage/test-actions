@@ -1,87 +1,31 @@
 name: Deployment Event Listener
 
 on:
-  workflow_run:
-    workflows:
-      - Parallelised TMS Train Deployment
-      - Deploy*
-      - X Single Env*
-      - X tms-*
-    types:
-      - completed
-      - in_progress
+  deployment:
+  deployment_status:
 
 jobs:
   prepare-message:
-    outputs:
-      message: ${{ steps.set-message.outputs.MESSAGE }}
     runs-on: ubuntu-latest
     steps:
       - name: Extract Workflow Details
         id: extract-details
         run: |
-          echo "WORKFLOW_NAME=${{ github.event.workflow_run.name }}" >> $GITHUB_ENV
-          echo "CONCLUSION=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_ENV
-          echo "STATUS=${{ github.event.workflow_run.status }}" >> $GITHUB_ENV
-          echo "STARTED_AT=${{ github.event.workflow_run.run_started_at }}" >> $GITHUB_ENV
-          echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}" >> $GITHUB_ENV
+          echo "🚀 Deployment Details:"
+          echo "Repository: ${{ github.repository }}"
+          echo "Environment: ${{ github.event.deployment.environment }}"
+          echo "Description: ${{ github.event.deployment.description }}"
+          echo "Triggered By: ${{ github.event.deployment.creator.login }}"
+          echo "Commit SHA: ${{ github.event.deployment.sha }}"
+          echo "Branch: ${{ github.event.deployment.ref }}"
+          echo "Deployment ID: ${{ github.event.deployment.id }}"
+          echo "URL: ${{ github.event.deployment.payload.url }}"
 
-      - name: Determine Status Icon and Message
-        id: set-status
+      - name: Extract Status Details
+        if: ${{ github.event_name == 'deployment_status' }}
         run: |
-          if [ "$STATUS" == "completed" ]; then
-            case "$CONCLUSION" in
-              success)
-                echo "ICON=:white_check_mark:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Succeeded" >> $GITHUB_ENV
-                ;;
-              failure)
-                echo "ICON=:x:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Failed" >> $GITHUB_ENV
-                ;;
-              cancelled)
-                echo "ICON=:no_entry:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Cancelled" >> $GITHUB_ENV
-                ;;
-              timed_out)
-                echo "ICON=:hourglass_flowing_sand:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Timed Out" >> $GITHUB_ENV
-                ;;
-              action_required)
-                echo "ICON=:warning:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Action Required" >> $GITHUB_ENV
-                ;;
-              neutral)
-                echo "ICON=:information_source:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Neutral" >> $GITHUB_ENV
-                ;;
-              skipped)
-                echo "ICON=:fast_forward:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Skipped" >> $GITHUB_ENV
-                ;;
-              stale)
-                echo "ICON=:warning:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Stale" >> $GITHUB_ENV
-                ;;
-              *)
-                echo "ICON=:grey_question:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Unknown Conclusion" >> $GITHUB_ENV
-                ;;
-            esac
-          else
-            case "$STATUS" in
-              in_progress)
-                echo "ICON=:arrow_forward:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=In Progress" >> $GITHUB_ENV
-                ;;
-              *)
-                echo "ICON=:grey_question:" >> $GITHUB_ENV
-                echo "STATUS_MESSAGE=Unknown Status" >> $GITHUB_ENV
-                ;;
-            esac
-          fi
-
-      - name: Construct Slack Message
-        id: set-message
-        run: |
-          echo "MESSAGE=${ICON} *Deployment Status: ${STATUS_MESSAGE}*\n*Workflow:* ${WORKFLOW_NAME}\n*Started At:* ${STARTED_AT}\n*Details:* <${RUN_URL}|View Deployment>"
+          echo "📋 Deployment Status:"
+          echo "Status: ${{ github.event.deployment_status.state }}"
+          echo "Description: ${{ github.event.deployment_status.description }}"
+          echo "Log URL: ${{ github.event.deployment_status.target_url }}"
+          echo "Updated By: ${{ github.actor }}"
