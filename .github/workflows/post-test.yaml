@@ -14,11 +14,10 @@ jobs:
           echo "🚀 Deployment Details:"
           echo "Environment: ${{ github.event.deployment.environment }}"
           echo "Triggered By: ${{ github.event.deployment.creator.login }}"
-          echo "Deployment ID: ${{ github.event.deployment.payload }}"
-          echo "Task: ${{ github.event.deployment.task }}"
 
       - name: Extract Status Details
         if: ${{ github.event_name == 'deployment_status' }}
         run: |
           echo "Status: ${{ github.event.deployment_status.state }}"
-          echo "Log URL: ${{ github.event.deployment_status.target_url }}"
+          echo "Target URL: ${{ github.event.deployment_status.target_url }}"
+          echo "Log URL: ${{ github.event.deployment_status.log_url }}"
