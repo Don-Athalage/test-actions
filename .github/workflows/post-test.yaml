@@ -13,9 +13,8 @@ jobs:
           echo "🚀 Deployment Details:"
           echo "ENVIRONMENT=${{ github.event.deployment.environment }}" >> $GITHUB_ENV
           echo "ACTOR=${{ github.event.deployment.creator.login }}" >> $GITHUB_ENV
-
-      - name: Extract Status Details
-        if: ${{ github.event_name == 'deployment_status' }}
-        run: |
           echo "STATUS=${{ github.event.deployment_status.state }}" >> $GITHUB_ENV
           echo "URL=${{ github.event.deployment_status.target_url }}" >> $GITHUB_ENV
+
+      - run: |
+          echo "$ENVIRONMENT, $ACTOR, $STATUS, $URL"
