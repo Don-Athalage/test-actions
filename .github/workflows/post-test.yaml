@@ -17,4 +17,4 @@ jobs:
           echo "URL=${{ github.event.deployment_status.target_url }}" >> $GITHUB_ENV
 
       - run: |
-          echo "$ACTOR triggered a deployment($URL) to $ENVIRONMENT. Current status is $STATUS"
+          echo "Deployment to $ENVIRONMENT is $STATUS $URL (Triggered by $ACTOR)"
