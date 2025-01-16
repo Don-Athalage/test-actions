@@ -1,20 +1,52 @@
-name: Deployment Event Listener
+name: "Deployment Slack Notification"
 
 on:
   deployment_status:
 
 jobs:
   prepare-message:
-    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.set-message.outputs.MESSAGE }}
+    runs-on: anzx-default
     steps:
       - name: Extract Workflow Details
         id: extract-details
         run: |
-          echo "🚀 Deployment Details:"
           echo "ENVIRONMENT=${{ github.event.deployment.environment }}" >> $GITHUB_ENV
           echo "ACTOR=${{ github.event.deployment.creator.login }}" >> $GITHUB_ENV
-          echo "STATUS=${{ github.event.deployment_status.state }}" >> $GITHUB_ENV
+          echo "STATUS=${{ github.event.deployment_status.state }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
           echo "URL=${{ github.event.deployment_status.target_url }}" >> $GITHUB_ENV
 
-      - run: |
-          echo "Deployment to $ENVIRONMENT $URL: Status: $STATUS (Triggered by $ACTOR)"
+      - id: set-message
+        run: |
+          case "$STATUS" in
+            success)
+              ICON=":white_check_mark:"
+              ;;
+            failure|error)
+              ICON=":x:"
+              ;;
+            in_progress|waiting)
+              ICON=":hourglass_flowing_sand:"
+              ;;
+            pending|queued)
+              ICON=":arrows_counterclockwise:"
+              ;;
+            inactive)
+              ICON=":zzz:"
+              ;;
+            *)
+              ICON=":grey_question:"
+              ;;
+          esac
+          MESSAGE="$ICON Deployment to $ENVIRONMENT $URL: *$STATUS* (Triggered by $ACTOR)"
+          echo "MESSAGE=$MESSAGE" >> $GITHUB_OUTPUT
+
+  notify:
+    needs: prepare-message
+    uses: anzx/github-reusable-workflows/.github/workflows/notification-hub.yaml@main
+    with:
+      isSlack: true
+      slackChannels: tms-deployment-notifications-${{ github.event.deployment.environment }}
+      slackMessage: ${{ needs.prepare-message.outputs.message }}
+      slackPrivate: true
