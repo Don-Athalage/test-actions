@@ -14,6 +14,8 @@ jobs:
     steps:
       - run: |
           echo "Generating a random number"
+          echo "Group=${{ github.ref == 'refs/heads/main' && github.sha || github.workflow }}-${{ github.ref }}"
+          echo "Cancel=${{ github.ref != 'refs/heads/main' }}"
 
   test-prod:
     runs-on: ubuntu-latest
