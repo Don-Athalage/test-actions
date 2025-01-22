@@ -11,8 +11,6 @@ jobs:
   test-dev:
     runs-on: ubuntu-latest
     environment: dev
-    concurrency:
-      group: dev-app
     steps:
       - run: |
           echo "Generating a random number"
