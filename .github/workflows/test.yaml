@@ -13,7 +13,7 @@ jobs:
     environment: dev
     steps:
       - run: |
-          echo "Generating a random number..."
+          echo "Generating a random number"
 
   test-prod:
     runs-on: ubuntu-latest
