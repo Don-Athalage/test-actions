@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Simulate random failure
         run: |
-          echo "Generating a random number..."
+          echo "Generating a random number"
           RANDOM_NUMBER=$(( RANDOM % 2 ))
           echo "Random number: $RANDOM_NUMBER"
           if [ $RANDOM_NUMBER -eq 0 ]; then
