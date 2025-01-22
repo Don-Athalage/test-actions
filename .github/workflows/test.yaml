@@ -29,8 +29,8 @@ jobs:
           RANDOM_NUMBER=$(( RANDOM % 2 ))
           echo "Random number: $RANDOM_NUMBER"
           if [ $RANDOM_NUMBER -eq 0 ]; then
-            echo "Simulating failure..."
+            echo "Simulating failure"
             exit 1
           else
-            echo "Simulating success..."
+            echo "Simulating success"
           fi
