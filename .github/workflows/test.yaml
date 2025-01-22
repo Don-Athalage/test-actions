@@ -4,7 +4,7 @@ on:
   push:
 
 concurrency:
-  group: ${{ github.ref == 'refs/heads/main' && github.sha || github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - run: |
           echo "Generating a random number"
-          echo "Group=${{ github.ref == 'refs/heads/main' && github.sha || github.workflow }}-${{ github.ref }}"
+          echo "Group=${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || '' }}"
           echo "Cancel=${{ github.ref != 'refs/heads/main' }}"
 
   test-prod:
