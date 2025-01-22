@@ -23,7 +23,6 @@ jobs:
     environment: prod
     concurrency:
       group: prod-app
-      cancel-in-progress: true
     steps:
       - name: Simulate random failure
         run: |
