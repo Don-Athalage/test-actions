@@ -21,8 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dev
     environment: prod
-    concurrency:
-      group: prod-app
     steps:
       - name: Simulate random failure
         run: |
