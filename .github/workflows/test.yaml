@@ -11,6 +11,8 @@ jobs:
   test-dev:
     runs-on: ubuntu-latest
     environment: dev
+    concurrency:
+      group: dev-app
     steps:
       - run: |
           echo "Generating a random number"
@@ -20,7 +22,7 @@ jobs:
     needs: test-dev
     environment: prod
     concurrency:
-      group: test-prod
+      group: prod-app
       cancel-in-progress: true
     steps:
       - name: Simulate random failure
