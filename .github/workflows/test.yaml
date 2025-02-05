@@ -4,12 +4,12 @@ on:
   release:
   push:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "0 9 * * *"
 
 jobs:
   test-dev:
     runs-on: ubuntu-latest
-    if: contains(fromJson('["pull_request", "push", "release", "schedule"]'), github.event_name)
+    if: github.event_name != 'schedule'
     environment: dev
     steps:
       - name: Print Debug Information
