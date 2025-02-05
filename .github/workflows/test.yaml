@@ -3,13 +3,13 @@ name: Deploy test
 on:
   release:
   push:
-  # schedule:
-  #   - cron: "*/1 * * * *"
+  schedule:
+    - cron: "*/1 * * * *"
 
 jobs:
   test-dev:
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule'
+    if: contains(fromJson('["pull_request", "push", "release"]'), github.event_name)
     environment: dev
     steps:
       - name: Print Debug Information
