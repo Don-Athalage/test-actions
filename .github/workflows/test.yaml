@@ -2,11 +2,14 @@ name: Deploy test
 
 on:
   release:
+  push:
+  schedule:
+    - cron: "*/1 * * * *"
 
 jobs:
   test-dev:
     runs-on: ubuntu-latest
-    if: ${{ github.event.release.prerelease == false && github.event_name == 'release' }}
+    if: ${{ contains(fromJson('["pull_request", "push", "release"]'), github.event_name) }}
     environment: dev
     steps:
       - run: |
