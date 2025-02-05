@@ -24,6 +24,4 @@ jobs:
     steps:
       - name: Print Debug Information
         run: |
-          echo "Generating a random number"
-          echo "Group=${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || '' }}"
-          echo "Cancel=${{ github.ref != 'refs/heads/main' }}"
+          echo "${{contains(fromJson('["pull_request", "push", "release"]'), github.event_name)}}"
