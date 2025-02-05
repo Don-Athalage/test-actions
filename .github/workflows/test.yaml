@@ -9,7 +9,7 @@ on:
 jobs:
   test-dev:
     runs-on: ubuntu-latest
-    if: ${{ contains(fromJson('["pull_request", "push", "release"]'), github.event_name) }}
+    if: ${{ contains(fromJson('["pull_request", "push", "release", "schedule"]'), github.event_name) }}
     environment: dev
     steps:
       - run: |
