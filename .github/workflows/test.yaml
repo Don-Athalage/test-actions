@@ -9,10 +9,11 @@ on:
 jobs:
   test-dev:
     runs-on: ubuntu-latest
-    if: ${{ contains(fromJson('["pull_request", "push", "release", "schedule"]'), github.event_name) }}
+    if: contains(fromJson('["pull_request", "push", "release", "schedule"]'), github.event_name)
     environment: dev
     steps:
-      - run: |
+      - name: Print Debug Information
+        run: |
           echo "Generating a random number"
           echo "Group=${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || '' }}"
           echo "Cancel=${{ github.ref != 'refs/heads/main' }}"
