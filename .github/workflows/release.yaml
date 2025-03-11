@@ -4,12 +4,15 @@ on:
       components:
         type: string
         required: true
+        default: test1,test2
       tag:
         type: string
         required: true
+        default: v1.2.3
       ref:
         type: string
         required: true
+        default: main
   push:
     branches:
       - release/**
@@ -18,7 +21,8 @@ on:
 jobs:
   manage-release:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,3 +61,5 @@ jobs:
         run: |
           git checkout -b ${{ steps.branch.outputs.branch }}
           git push -u origin ${{ steps.branch.outputs.branch }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
