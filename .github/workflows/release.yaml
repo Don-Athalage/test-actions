@@ -15,6 +15,7 @@ on:
         default: main
   push:
     branches:
+      - main
       - release/**
       - hotfix/**
 
