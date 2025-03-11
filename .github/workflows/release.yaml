@@ -13,11 +13,11 @@ on:
         type: string
         required: true
         default: main
-  push:
-    branches:
-      - main
-      - release/**
-      - hotfix/**
+  # push:
+  #   branches:
+  #     - main
+  #     - release/**
+  #     - hotfix/**
 
 jobs:
   manage-release:
@@ -29,11 +29,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: "0"
+          ref: ${{ inputs.ref }}
 
       - name: Get branch name
         id: branch
         run: |
-
           if ! [[ "${{ inputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
             echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
             exit 1
@@ -64,3 +64,105 @@ jobs:
           git push -u origin ${{ steps.branch.outputs.branch }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Check tag exists
+        id: tag_exists
+        run: |
+          TAG="${{ inputs.tag }}"
+
+          if git ls-remote --tags origin refs/tags/$TAG | grep -q $TAG; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $TAG already exists"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG does not exist"
+          fi
+
+      - name: Create tag
+        if: steps.tag_exists.outputs.tag_exists == 'false'
+        run: |
+          git tag ${{ inputs.tag }}
+          git push origin ${{ inputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Setup GitHub CLI
+        uses: cli/setup-gh@v1
+
+      - name: Check release exists
+        id: release_exists
+        run: |
+          TAG="${{ inputs.tag }}"
+
+          if gh release view "$TAG" --json name > /dev/null 2>&1; then
+            echo "release_exists=true" >> $GITHUB_OUTPUT
+            echo "Release $TAG already exists"
+          else
+            echo "release_exists=false" >> $GITHUB_OUTPUT
+            echo "Release $TAG does not exist"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Generate release notes
+        id: release_notes
+        if: steps.release_exists.outputs.release_exists == 'false'
+        run: |
+          COMPONENTS="${{ inputs.components }}"
+          TAG="${{ inputs.tag }}"
+
+          # Get the previous tag to generate diff
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "$TAG" | head -n 1 || echo "")
+
+          # Generate release notes
+          echo "# Release $TAG" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## Components" >> release_notes.md
+
+          IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
+          for comp in "${COMP_ARRAY[@]}"; do
+            echo "- $comp" >> release_notes.md
+          done
+
+          echo "" >> release_notes.md
+          echo "## Changes" >> release_notes.md
+
+          if [ -n "$PREV_TAG" ]; then
+            git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" >> release_notes.md
+          else
+            git log --pretty=format:"* %s (%h)" >> release_notes.md
+          fi
+
+          echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        if: steps.release_exists.outputs.release_exists == 'false'
+        run: |
+          gh release create ${{ inputs.tag }} \
+            --title "Release ${{ inputs.tag }}" \
+            --notes-file ${{ steps.release_notes.outputs.notes_file }} \
+            --target ${{ steps.branch.outputs.branch }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Update release
+        if: steps.release_exists.outputs.release_exists == 'true'
+        run: |
+          # Generate updated notes for existing release
+          COMPONENTS="${{ inputs.components }}"
+          TAG="${{ inputs.tag }}"
+
+          echo "# Release $TAG" > updated_notes.md
+          echo "" >> updated_notes.md
+          echo "## Components" >> updated_notes.md
+
+          IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
+          for comp in "${COMP_ARRAY[@]}"; do
+            echo "- $comp" >> updated_notes.md
+          done
+
+          # Update the existing release
+          gh release edit ${{ inputs.tag }} \
+            --notes-file updated_notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
