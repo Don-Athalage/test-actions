@@ -86,9 +86,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Setup GitHub CLI
-        uses: cli/setup-gh@v1
-
       - name: Check release exists
         id: release_exists
         run: |
