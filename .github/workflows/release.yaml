@@ -7,7 +7,7 @@ on:
       tag:
         type: string
         required: true
-      sha:
+      ref:
         type: string
         required: true
   push:
@@ -51,3 +51,9 @@ jobs:
             echo "branch_exists=false" >> $GITHUB_OUTPUT
             echo "Branch $BRANCH does not exist"
           fi
+
+      - name: Create branch
+        if: steps.branch_exists.outputs.branch_exists == 'false'
+        run: |
+          git checkout -b ${{ steps.branch.outputs.branch }}
+          git push -u origin ${{ steps.branch.outputs.branch }}
