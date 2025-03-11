@@ -17,7 +17,7 @@ on:
 
 jobs:
   manage-release:
-    runs-on: anzx-default
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
