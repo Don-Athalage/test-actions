@@ -136,9 +136,7 @@ jobs:
         id: release_notes
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
-          echo "# Release ${{ steps.vars.outputs.git_tag }}" > release_notes.md
-          echo "" >> release_notes.md
-          echo "## Image Tag" >> release_notes.md
+          echo "## Image Tag" > release_notes.md
           echo "${{ steps.vars.outputs.image_tag }}" >> release_notes.md
           echo "" >> release_notes.md
           echo "## Components" >> release_notes.md
@@ -166,9 +164,7 @@ jobs:
       - name: Update release
         if: steps.release_exists.outputs.release_exists == 'true'
         run: |
-          echo "# Release ${{ steps.vars.outputs.git_tag }}" > updated_notes.md
-          echo "" >> updated_notes.md
-          echo "## Image Tag" >> updated_notes.md
+          echo "## Image Tag" > updated_notes.md
           echo "${{ steps.vars.outputs.image_tag }}" >> updated_notes.md
           echo "" >> updated_notes.md
           echo "## Components" >> updated_notes.md
