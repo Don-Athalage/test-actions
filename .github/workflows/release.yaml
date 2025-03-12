@@ -85,9 +85,9 @@ jobs:
           wget -O semver \
             https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
 
-          chmod +x semver
+          chmod +x ./semver
 
-          NEW_TAG=$(semver bump patch $LATEST_TAG)
+          NEW_TAG=$(./semver bump patch $LATEST_TAG)
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
