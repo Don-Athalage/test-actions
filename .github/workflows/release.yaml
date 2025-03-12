@@ -76,8 +76,23 @@ jobs:
           GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
 
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
           echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
+
+
+          # Get the latest SemVer tag (fallback to 0.0.0 if none exists)
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
+
+          # Extract major, minor, patch numbers
+          MAJOR=$(echo "$LATEST_TAG" | cut -d. -f1 | sed 's/v//')
+          MINOR=$(echo "$LATEST_TAG" | cut -d. -f2)
+          PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
+
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}+$IMAGE_TAG"
+
+          echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
       - name: Validate components input
         run: |
@@ -85,6 +100,7 @@ jobs:
             echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
             exit 1
           fi
+
 
       - name: Check if tag exists
         id: tag_exists
@@ -120,7 +136,7 @@ jobs:
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
           gh release create ${{ steps.vars.outputs.git_tag }} \
-            --title "Release ${{ steps.vars.outputs.image_tag }}" \
+            --title "Release ${{ steps.vars.outputs.git_tag }}" \
             --target ${{ github.sha }} \
             --latest
         env:
