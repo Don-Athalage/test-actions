@@ -78,19 +78,27 @@ jobs:
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
 
+          # Get the latest SemVer tag (fallback to v0.0.0 if none exists)
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          LATEST_TAG=${LATEST_TAG:-"v0.0.0"}
 
-          # Get the latest SemVer tag (fallback to 0.0.0 if none exists)
-          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
+          # Extract major, minor, and patch versions
+          VERSION=$(echo "$LATEST_TAG" | sed -E 's/^v//')
+          MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
+          MINOR=$(echo "$VERSION" | cut -d'.' -f2)
+          PATCH=$(echo "$VERSION" | cut -d'.' -f3)
 
-          wget -O semver \
-            https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          # Ensure PATCH is a number, default to 0 if not
+          PATCH=${PATCH:-0}
 
-          chmod +x ./semver
-
-          NEW_TAG=v$(./semver bump patch $LATEST_TAG)+${IMAGE_TAG}
+          # Increment PATCH version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          NEW_TAG="${NEW_TAG}+${IMAGE_TAG}"
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
 
       - name: Validate components input
         run: |
