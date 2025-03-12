@@ -172,3 +172,10 @@ jobs:
           gh release edit ${{ steps.vars.outputs.git_tag }} --notes-file updated_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload components to release
+        run: |
+          echo "${{ steps.vars.outputs.components }}" > components.txt
+          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
