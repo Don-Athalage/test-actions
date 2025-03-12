@@ -121,7 +121,7 @@ jobs:
         run: |
           gh release create ${{ steps.vars.outputs.git_tag }} \
             --title "Release ${{ steps.vars.outputs.git_tag }}" \
-            --target ${{ steps.branch.outputs.branch }}
+            --target ${{ github.sha }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
