@@ -82,18 +82,22 @@ jobs:
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
           LATEST_TAG=${LATEST_TAG:-"v0.0.0"}
 
+          # Remove pre-release (-...) and metadata (+...) parts
+          CLEAN_TAG=$(echo "$LATEST_TAG" | sed -E 's/[-+].*//')
+
           # Extract major, minor, and patch versions
-          VERSION=$(echo "$LATEST_TAG" | sed -E 's/^v//')
+          VERSION=$(echo "$CLEAN_TAG" | sed -E 's/^v//')
           MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
           MINOR=$(echo "$VERSION" | cut -d'.' -f2)
-          PATCH=$(echo "$VERSION" | cut -d'.' -f3)
 
-          # Ensure PATCH is a number, default to 0 if not
-          PATCH=${PATCH:-0}
+          # Extract PATCH correctly, even if LATEST_TAG had '-' or '+'
+          PATCH=$(echo "$VERSION" | cut -d'.' -f3)
+          PATCH=${PATCH:-0}  # Default to 0 if empty
 
           # Increment PATCH version
           NEW_PATCH=$((PATCH + 1))
           NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
           NEW_TAG="${NEW_TAG}+${IMAGE_TAG}"
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
