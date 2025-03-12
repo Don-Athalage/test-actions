@@ -89,7 +89,7 @@ jobs:
 
           # Increment patch version
           NEW_PATCH=$((PATCH + 1))
-          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}+$IMAGE_TAG"
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}+${IMAGE_TAG}"
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
