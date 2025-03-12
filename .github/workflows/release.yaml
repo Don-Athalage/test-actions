@@ -38,24 +38,43 @@ jobs:
         id: push_vars
         run: |
           BRANCH="${GITHUB_REF#refs/heads/}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+
           if [[ "$BRANCH" == release/* ]]; then
             # Extract tag and components from branch name format: release/tag/components
-            TAG=$(echo "$BRANCH" | cut -d'/' -f2)
+            IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
             COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+
+            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
             echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH" == "main" || "$BRANCH" == hotfix/* ]]; then
-            # Use current date as tag for main and hotfix branches
-            TAG="$(date +'%Y.%m.%d')-${GITHUB_SHA:0:7}"
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            # Use current date as image tag for main and hotfix branches
+            IMAGE_TAG="$(date +'%Y.%m.%d')"
+            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+
+            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
             echo "components=all" >> $GITHUB_OUTPUT
           fi
 
       - name: Set final variables
         id: vars
         run: |
-          echo "tag=${{ github.event.inputs.tag || steps.push_vars.outputs.tag }}" >> $GITHUB_OUTPUT
-          echo "components=${{ github.event.inputs.components || steps.push_vars.outputs.components }}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            IMAGE_TAG="${{ github.event.inputs.tag }}"
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+
+            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
+            echo "components=${{ github.event.inputs.components }}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=${{ steps.push_vars.outputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "git_tag=${{ steps.push_vars.outputs.git_tag }}" >> $GITHUB_OUTPUT
+            echo "components=${{ steps.push_vars.outputs.components }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Validate components input
         run: |
@@ -68,7 +87,7 @@ jobs:
         id: branch
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            branch=release/${{ steps.vars.outputs.tag }}/${{ steps.vars.outputs.components }}
+            branch=release/${{ steps.vars.outputs.image_tag }}/${{ steps.vars.outputs.components }}
           else
             branch="${GITHUB_REF#refs/heads/}"
           fi
@@ -96,7 +115,7 @@ jobs:
       - name: Check if tag exists
         id: tag_exists
         run: |
-          TAG="${{ steps.vars.outputs.tag }}"
+          TAG="${{ steps.vars.outputs.git_tag }}"
           if git ls-remote --tags origin refs/tags/$TAG | grep -q $TAG; then
             echo "tag_exists=true" >> $GITHUB_OUTPUT
           else
@@ -106,15 +125,15 @@ jobs:
       - name: Create tag
         if: steps.tag_exists.outputs.tag_exists == 'false'
         run: |
-          git tag ${{ steps.vars.outputs.tag }}
-          git push origin ${{ steps.vars.outputs.tag }}
+          git tag ${{ steps.vars.outputs.git_tag }}
+          git push origin ${{ steps.vars.outputs.git_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check if release exists
         id: release_exists
         run: |
-          TAG="${{ steps.vars.outputs.tag }}"
+          TAG="${{ steps.vars.outputs.git_tag }}"
           if gh release view "$TAG" --json name > /dev/null 2>&1; then
             echo "release_exists=true" >> $GITHUB_OUTPUT
           else
@@ -127,13 +146,16 @@ jobs:
         id: release_notes
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
-          echo "# Release ${{ steps.vars.outputs.tag }}" > release_notes.md
+          echo "# Release ${{ steps.vars.outputs.git_tag }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## Image Tag" >> release_notes.md
+          echo "${{ steps.vars.outputs.image_tag }}" >> release_notes.md
           echo "" >> release_notes.md
           echo "## Components" >> release_notes.md
           echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> release_notes.md
           echo "" >> release_notes.md
           echo "## Changes" >> release_notes.md
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.vars.outputs.tag }}" | head -n 1 || echo "")
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.vars.outputs.git_tag }}" | head -n 1 || echo "")
           if [ -n "$PREV_TAG" ]; then
             git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" >> release_notes.md
           else
@@ -144,8 +166,8 @@ jobs:
       - name: Create release
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
-          gh release create ${{ steps.vars.outputs.tag }} \
-            --title "Release ${{ steps.vars.outputs.tag }}" \
+          gh release create ${{ steps.vars.outputs.git_tag }} \
+            --title "Release ${{ steps.vars.outputs.git_tag }}" \
             --notes-file ${{ steps.release_notes.outputs.notes_file }} \
             --target ${{ steps.branch.outputs.branch }}
         env:
@@ -154,10 +176,13 @@ jobs:
       - name: Update release
         if: steps.release_exists.outputs.release_exists == 'true'
         run: |
-          echo "# Release ${{ steps.vars.outputs.tag }}" > updated_notes.md
+          echo "# Release ${{ steps.vars.outputs.git_tag }}" > updated_notes.md
+          echo "" >> updated_notes.md
+          echo "## Image Tag" >> updated_notes.md
+          echo "${{ steps.vars.outputs.image_tag }}" >> updated_notes.md
           echo "" >> updated_notes.md
           echo "## Components" >> updated_notes.md
           echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> updated_notes.md
-          gh release edit ${{ steps.vars.outputs.tag }} --notes-file updated_notes.md
+          gh release edit ${{ steps.vars.outputs.git_tag }} --notes-file updated_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
