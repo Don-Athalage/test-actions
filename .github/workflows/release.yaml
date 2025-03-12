@@ -120,7 +120,7 @@ jobs:
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
           gh release create ${{ steps.vars.outputs.git_tag }} \
-            --title "Release ${{ steps.vars.outputs.git_tag }}" \
+            --title "Release ${{ steps.vars.outputs.image_tag }}" \
             --target ${{ github.sha }} \
             --latest
         env:
