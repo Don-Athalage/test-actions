@@ -195,5 +195,5 @@ jobs:
           done
 
           gh release upload ${{ steps.patch_bump.outputs.new_tag }} components.txt --clobber
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
