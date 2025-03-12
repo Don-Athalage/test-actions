@@ -6,14 +6,14 @@ on:
         required: true
         default: test1,test2
         description: Component list
-      image_tag:
+      tag:
         type: string
         required: true
         description: Image Tag for components
       ref:
         type: string
         required: true
-        default: Specific git ref to tag
+        description: Specific git ref to tag
 
   push:
     branches:
@@ -30,165 +30,134 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: "0"
-          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - name: Get branch name
-        id: branch
+      - name: Set components and tag for push event
+        if: github.event_name == 'push'
+        id: push_vars
         run: |
-          if ! [[ "${{ inputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == release/* ]]; then
+            # Extract tag and components from branch name format: release/tag/components
+            TAG=$(echo "$BRANCH" | cut -d'/' -f2)
+            COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH" == "main" || "$BRANCH" == hotfix/* ]]; then
+            # Use current date as tag for main and hotfix branches
+            TAG="$(date +'%Y.%m.%d')-${GITHUB_SHA:0:7}"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "components=all" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set final variables
+        id: vars
+        run: |
+          echo "tag=${{ github.event.inputs.tag || steps.push_vars.outputs.tag }}" >> $GITHUB_OUTPUT
+          echo "components=${{ github.event.inputs.components || steps.push_vars.outputs.components }}" >> $GITHUB_OUTPUT
+
+      - name: Validate components input
+        run: |
+          if ! [[ "${{ steps.vars.outputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
             echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
             exit 1
           fi
 
-          branch=release/${{inputs.image_tag}}/${{inputs.components}}
+      - name: Get branch name
+        id: branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            branch=release/${{ steps.vars.outputs.tag }}/${{ steps.vars.outputs.components }}
+          else
+            branch="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "branch=$branch" >> $GITHUB_OUTPUT
 
-          echo $branch
-          echo branch=$branch >> $GITHUB_OUTPUT
-
-      - name: Check branch
+      - name: Check if branch exists
         id: branch_exists
+        if: github.event_name == 'workflow_dispatch'
         run: |
           BRANCH="${{ steps.branch.outputs.branch }}"
-
           if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_OUTPUT
-            echo "Branch $BRANCH already exists"
           else
             echo "branch_exists=false" >> $GITHUB_OUTPUT
-            echo "Branch $BRANCH does not exist"
           fi
 
       - name: Create branch
-        if: steps.branch_exists.outputs.branch_exists == 'false'
+        if: github.event_name == 'workflow_dispatch' && steps.branch_exists.outputs.branch_exists == 'false'
         run: |
           git checkout -b ${{ steps.branch.outputs.branch }}
           git push -u origin ${{ steps.branch.outputs.branch }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check tag exists
+      - name: Check if tag exists
         id: tag_exists
         run: |
-          COMMIT_SHA=$(git rev-parse HEAD)
-          TAG_EXISTS=$(git tag --points-at $COMMIT_SHA)
-
-          if [ -n "$TAG_EXISTS" ]; then
+          TAG="${{ steps.vars.outputs.tag }}"
+          if git ls-remote --tags origin refs/tags/$TAG | grep -q $TAG; then
             echo "tag_exists=true" >> $GITHUB_OUTPUT
-            echo "Existing tag: $TAG_EXISTS"
           else
             echo "tag_exists=false" >> $GITHUB_OUTPUT
-            echo "No tag found for this SHA"
           fi
 
-      - name: Bump patch version and create tag
-        id: patch_bump
+      - name: Create tag
+        if: steps.tag_exists.outputs.tag_exists == 'false'
         run: |
-          # Get latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-
-          # Extract version components
-          IFS='.' read -ra VERSION <<< "${LATEST_TAG#v}"
-          MAJOR=${VERSION[0]}
-          MINOR=${VERSION[1]}
-          PATCH=${VERSION[2]}
-
-          # Increment patch version
-          PATCH=$((PATCH + 1))
-          NEW_TAG="v$MAJOR.$MINOR.$PATCH"
-
-          # Create new tag
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
-
-          # Output new tag
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          git tag ${{ steps.vars.outputs.tag }}
+          git push origin ${{ steps.vars.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check release exists
+      - name: Check if release exists
         id: release_exists
         run: |
-          TAG="${{ steps.patch_bump.outputs.new_tag }}"
-
+          TAG="${{ steps.vars.outputs.tag }}"
           if gh release view "$TAG" --json name > /dev/null 2>&1; then
             echo "release_exists=true" >> $GITHUB_OUTPUT
-            echo "Release $TAG already exists"
           else
             echo "release_exists=false" >> $GITHUB_OUTPUT
-            echo "Release $TAG does not exist"
           fi
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate release notes
         id: release_notes
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
-          COMPONENTS="${{ inputs.components }}"
-          TAG="${{ steps.patch_bump.outputs.new_tag }}"
-
-          # Get the previous tag to generate diff
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "$TAG" | head -n 1 || echo "")
-
-          # Generate release notes
-          echo "## Components" > release_notes.md
-
-          IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
-          for comp in "${COMP_ARRAY[@]}"; do
-            echo "- $comp" >> release_notes.md
-          done
-
+          echo "# Release ${{ steps.vars.outputs.tag }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## Components" >> release_notes.md
+          echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> release_notes.md
           echo "" >> release_notes.md
           echo "## Changes" >> release_notes.md
-
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.vars.outputs.tag }}" | head -n 1 || echo "")
           if [ -n "$PREV_TAG" ]; then
             git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" >> release_notes.md
           else
             git log --pretty=format:"* %s (%h)" >> release_notes.md
           fi
-
           echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
 
       - name: Create release
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
-          gh release create ${{ steps.patch_bump.outputs.new_tag }} \
-            --title "Release ${{ steps.patch_bump.outputs.new_tag }}" \
+          gh release create ${{ steps.vars.outputs.tag }} \
+            --title "Release ${{ steps.vars.outputs.tag }}" \
             --notes-file ${{ steps.release_notes.outputs.notes_file }} \
             --target ${{ steps.branch.outputs.branch }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update release
         if: steps.release_exists.outputs.release_exists == 'true'
         run: |
-          # Generate updated notes for existing release
-          COMPONENTS="${{ inputs.components }}"
-          TAG="${{ steps.patch_bump.outputs.new_tag }}"
-
-          echo "## Components" > updated_notes.md
-
-          IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
-          for comp in "${COMP_ARRAY[@]}"; do
-            echo "- $comp" >> updated_notes.md
-          done
-
-          # Update the existing release
-          gh release edit ${{ steps.patch_bump.outputs.new_tag }} \
-            --notes-file updated_notes.md
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Upload component list to release
-        run: |
-          COMPONENTS="${{ inputs.components }}"
-          touch components.txt
-          IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
-          for comp in "${COMP_ARRAY[@]}"; do
-            echo "- $comp" >> components.txt
-          done
-
-          gh release upload ${{ steps.patch_bump.outputs.new_tag }} components.txt --clobber
+          echo "# Release ${{ steps.vars.outputs.tag }}" > updated_notes.md
+          echo "" >> updated_notes.md
+          echo "## Components" >> updated_notes.md
+          echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> updated_notes.md
+          gh release edit ${{ steps.vars.outputs.tag }} --notes-file updated_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
