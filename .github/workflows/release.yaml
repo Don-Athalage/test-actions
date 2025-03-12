@@ -73,22 +73,19 @@ jobs:
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
           COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
+          GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
 
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
 
-          # Get the latest SemVer tag (fallback to v0.0.0 if none exists)
+
+          # Get the latest SemVer tag (fallback to 0.0.0 if none exists)
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
 
-          # Extract major, minor, patch numbers safely
-          MAJOR=$(echo "$LATEST_TAG" | grep -oP '(?<=v)[0-9]+' || echo "0")
-          MINOR=$(echo "$LATEST_TAG" | grep -oP '(?<=v[0-9]+\.)[0-9]+' || echo "0")
-          PATCH=$(echo "$LATEST_TAG" | grep -oP '(?<=v[0-9]+\.[0-9]+\.)[0-9]+' || echo "0")
-
-          # Ensure PATCH is a valid number
-          if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
-            PATCH=0
-          fi
+          # Extract major, minor, patch numbers
+          MAJOR=$(echo "$LATEST_TAG" | cut -d. -f1 | sed 's/v//')
+          MINOR=$(echo "$LATEST_TAG" | cut -d. -f2)
+          PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
 
           # Increment patch version correctly
           NEW_PATCH=$((PATCH + 1))
