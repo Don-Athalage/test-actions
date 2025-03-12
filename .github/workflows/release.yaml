@@ -64,20 +64,45 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ steps.branch.outputs.branch || github.ref }}
+          ref: ${{ steps.branch.outputs.branch }}
 
       - name: Set components and tag for push event
         id: vars
         run: |
-          BRANCH="${GITHUB_REF#refs/heads/}"
+          BRANCH="${{ steps.branch.outputs.branch }}"
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
           COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
           GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
 
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
           echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
+
+          # Get the latest SemVer tag (fallback to v0.0.0 if none exists)
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          LATEST_TAG=${LATEST_TAG:-"v0.0.0"}
+
+          # Remove pre-release (-...) and metadata (+...) parts
+          CLEAN_TAG=$(echo "$LATEST_TAG" | sed -E 's/[-+].*//')
+
+          # Extract major, minor, and patch versions
+          VERSION=$(echo "$CLEAN_TAG" | sed -E 's/^v//')
+          MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
+          MINOR=$(echo "$VERSION" | cut -d'.' -f2)
+
+          # Extract PATCH correctly, even if LATEST_TAG had '-' or '+'
+          PATCH=$(echo "$VERSION" | cut -d'.' -f3)
+          PATCH=${PATCH:-0}  # Default to 0 if empty
+
+          # Increment PATCH version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          NEW_TAG="${NEW_TAG}+${IMAGE_TAG}"
+
+          echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
 
       - name: Validate components input
         run: |
@@ -121,13 +146,22 @@ jobs:
         run: |
           gh release create ${{ steps.vars.outputs.git_tag }} \
             --title "Release ${{ steps.vars.outputs.git_tag }}" \
-            --target ${{ steps.branch.outputs.branch }}
+            --target ${{ github.sha }} \
+            --latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload components to release
+      - name: Upload components
         run: |
           echo "${{ steps.vars.outputs.components }}" > components.txt
-          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt
+
+          # Check if the file already exists in the release
+          if gh release view ${{ steps.vars.outputs.git_tag }} --json assets | jq -r '.assets[].name' | grep -q "^components.txt$"; then
+            echo "Asset components.txt exists. Deleting before re-uploading..."
+            gh release delete-asset ${{ steps.vars.outputs.git_tag }} components.txt --yes
+          fi
+
+          # Upload new asset
+          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
