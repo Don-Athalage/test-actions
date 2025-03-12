@@ -87,7 +87,7 @@ jobs:
 
           chmod +x ./semver
 
-          NEW_TAG=$(./semver bump patch $LATEST_TAG)
+          NEW_TAG=v$(./semver bump patch $LATEST_TAG)+${IMAGE_TAG}
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
