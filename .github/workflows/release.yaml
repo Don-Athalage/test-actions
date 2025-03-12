@@ -82,14 +82,12 @@ jobs:
           # Get the latest SemVer tag (fallback to 0.0.0 if none exists)
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
 
-          # Extract major, minor, patch numbers
-          MAJOR=$(echo "$LATEST_TAG" | cut -d. -f1 | sed 's/v//')
-          MINOR=$(echo "$LATEST_TAG" | cut -d. -f2)
-          PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
+          wget -O semver \
+            https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
 
-          # Increment patch version correctly
-          NEW_PATCH=$((PATCH + 1))
-          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}-${IMAGE_TAG}"
+          chmod +x semver
+
+          NEW_TAG=$(semver bump patch $LATEST_TAG)
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
