@@ -69,7 +69,7 @@ jobs:
       - name: Set components and tag for push event
         id: vars
         run: |
-          BRANCH="${GITHUB_REF#refs/heads/}"
+          BRANCH="${{ steps.branch.outputs.branch }}"
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
           COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
