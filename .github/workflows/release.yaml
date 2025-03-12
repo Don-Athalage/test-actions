@@ -133,9 +133,7 @@ jobs:
           PREV_TAG=$(git tag --sort=-version:refname | grep -v "$TAG" | head -n 1 || echo "")
 
           # Generate release notes
-          echo "# Release $TAG" > release_notes.md
-          echo "" >> release_notes.md
-          echo "## Components" >> release_notes.md
+          echo "## Components" > release_notes.md
 
           IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
           for comp in "${COMP_ARRAY[@]}"; do
@@ -170,9 +168,7 @@ jobs:
           COMPONENTS="${{ inputs.components }}"
           TAG="${{ steps.patch_bump.outputs.new_tag }}"
 
-          echo "# Release $TAG" > updated_notes.md
-          echo "" >> updated_notes.md
-          echo "## Components" >> updated_notes.md
+          echo "## Components" > updated_notes.md
 
           IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
           for comp in "${COMP_ARRAY[@]}"; do
