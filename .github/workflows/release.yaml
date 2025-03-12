@@ -31,53 +31,11 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - name: Set components and tag for push event
-        if: github.event_name == 'push'
-        id: push_vars
-        run: |
-          BRANCH="${GITHUB_REF#refs/heads/}"
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-
-          if [[ "$BRANCH" == release/* ]]; then
-            # Extract tag and components from branch name format: release/tag/components
-            IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
-            COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
-            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
-
-            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
-            echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Set final variables
-        id: vars
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            IMAGE_TAG="${{ github.event.inputs.tag }}"
-            SHORT_SHA="${GITHUB_SHA:0:7}"
-            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
-
-            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
-            echo "components=${{ github.event.inputs.components }}" >> $GITHUB_OUTPUT
-          else
-            echo "image_tag=${{ steps.push_vars.outputs.image_tag }}" >> $GITHUB_OUTPUT
-            echo "git_tag=${{ steps.push_vars.outputs.git_tag }}" >> $GITHUB_OUTPUT
-            echo "components=${{ steps.push_vars.outputs.components }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Validate components input
-        run: |
-          if ! [[ "${{ steps.vars.outputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
-            echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
-            exit 1
-          fi
-
       - name: Get branch name
         id: branch
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            branch=release/${{ steps.vars.outputs.image_tag }}/${{ steps.vars.outputs.components }}
+            branch=release/${{ inputs.tag }}/${{ inputs.components }}
           else
             branch="${GITHUB_REF#refs/heads/}"
           fi
@@ -101,6 +59,32 @@ jobs:
           git push -u origin ${{ steps.branch.outputs.branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.branch.outputs.branch || github.ref }}
+
+      - name: Set components and tag for push event
+        id: vars
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
+          COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
+          GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
+          echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
+
+      - name: Validate components input
+        run: |
+          if ! [[ "${{ steps.vars.outputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
+            echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
+            exit 1
+          fi
 
       - name: Check if tag exists
         id: tag_exists
@@ -132,44 +116,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate release notes
-        id: release_notes
-        if: steps.release_exists.outputs.release_exists == 'false'
-        run: |
-          echo "## Image Tag" > release_notes.md
-          echo "${{ steps.vars.outputs.image_tag }}" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Components" >> release_notes.md
-          echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Changes" >> release_notes.md
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" >> release_notes.md
-          else
-            git log --pretty=format:"* %s (%h)" >> release_notes.md
-          fi
-          echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
-
       - name: Create release
         if: steps.release_exists.outputs.release_exists == 'false'
         run: |
           gh release create ${{ steps.vars.outputs.git_tag }} \
             --title "Release ${{ steps.vars.outputs.git_tag }}" \
-            --notes-file ${{ steps.release_notes.outputs.notes_file }} \
             --target ${{ steps.branch.outputs.branch }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update release
-        if: steps.release_exists.outputs.release_exists == 'true'
-        run: |
-          echo "## Image Tag" > updated_notes.md
-          echo "${{ steps.vars.outputs.image_tag }}" >> updated_notes.md
-          echo "" >> updated_notes.md
-          echo "## Components" >> updated_notes.md
-          echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> updated_notes.md
-          gh release edit ${{ steps.vars.outputs.git_tag }} --notes-file updated_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
