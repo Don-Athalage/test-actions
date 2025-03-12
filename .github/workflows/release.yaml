@@ -17,9 +17,7 @@ on:
 
   push:
     branches:
-      - main
       - release/**
-      - hotfix/**
 
 jobs:
   create-release:
@@ -49,14 +47,6 @@ jobs:
             echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
             echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
             echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
-          elif [[ "$BRANCH" == "main" || "$BRANCH" == hotfix/* ]]; then
-            # Use current date as image tag for main and hotfix branches
-            IMAGE_TAG="$(date +'%Y.%m.%d')"
-            GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
-
-            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-            echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
-            echo "components=all" >> $GITHUB_OUTPUT
           fi
 
       - name: Set final variables
