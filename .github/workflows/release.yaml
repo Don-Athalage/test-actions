@@ -73,23 +73,26 @@ jobs:
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
           COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
-          GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
 
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
 
-
-          # Get the latest SemVer tag (fallback to 0.0.0 if none exists)
+          # Get the latest SemVer tag (fallback to v0.0.0 if none exists)
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
 
-          # Extract major, minor, patch numbers
-          MAJOR=$(echo "$LATEST_TAG" | cut -d. -f1 | sed 's/v//')
-          MINOR=$(echo "$LATEST_TAG" | cut -d. -f2)
-          PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
+          # Extract major, minor, patch numbers safely
+          MAJOR=$(echo "$LATEST_TAG" | grep -oP '(?<=v)[0-9]+' || echo "0")
+          MINOR=$(echo "$LATEST_TAG" | grep -oP '(?<=v[0-9]+\.)[0-9]+' || echo "0")
+          PATCH=$(echo "$LATEST_TAG" | grep -oP '(?<=v[0-9]+\.[0-9]+\.)[0-9]+' || echo "0")
 
-          # Increment patch version
+          # Ensure PATCH is a valid number
+          if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
+            PATCH=0
+          fi
+
+          # Increment patch version correctly
           NEW_PATCH=$((PATCH + 1))
-          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}+${IMAGE_TAG}"
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}-${IMAGE_TAG}"
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
@@ -100,7 +103,6 @@ jobs:
             echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
             exit 1
           fi
-
 
       - name: Check if tag exists
         id: tag_exists
@@ -142,9 +144,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload components to release
+      - name: Upload components
         run: |
           echo "${{ steps.vars.outputs.components }}" > components.txt
-          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt
+
+          # Check if the file already exists in the release
+          if gh release view ${{ steps.vars.outputs.git_tag }} --json assets | jq -r '.assets[].name' | grep -q "^components.txt$"; then
+            echo "Asset components.txt exists. Deleting before re-uploading..."
+            gh release delete-asset ${{ steps.vars.outputs.git_tag }} components.txt --yes
+          fi
+
+          # Upload new asset
+          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
