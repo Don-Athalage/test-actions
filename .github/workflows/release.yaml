@@ -143,7 +143,7 @@ jobs:
           echo "${{ steps.vars.outputs.components }}" | tr ',' '\n' | sed 's/^/- /' >> release_notes.md
           echo "" >> release_notes.md
           echo "## Changes" >> release_notes.md
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.vars.outputs.git_tag }}" | head -n 1 || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" >> release_notes.md
           else
