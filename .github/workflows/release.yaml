@@ -1,11 +1,6 @@
 on:
   workflow_dispatch:
     inputs:
-      components:
-        type: string
-        required: true
-        default: test1,test2
-        description: Component list
       tag:
         type: string
         required: true
@@ -35,7 +30,7 @@ jobs:
         id: branch
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            branch=release/${{ inputs.tag }}/${{ inputs.components }}
+            branch=release/${{ inputs.tag }}
           else
             branch="${GITHUB_REF#refs/heads/}"
           fi
@@ -72,11 +67,9 @@ jobs:
           BRANCH="${{ steps.branch.outputs.branch }}"
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_TAG=$(echo "$BRANCH" | cut -d'/' -f2)
-          COMPONENTS=$(echo "$BRANCH" | cut -d'/' -f3-)
           GIT_TAG="${IMAGE_TAG}-${SHORT_SHA}"
 
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
 
           # Get the latest SemVer tag (fallback to v0.0.0 if none exists)
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
@@ -102,14 +95,6 @@ jobs:
 
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
-
-      - name: Validate components input
-        run: |
-          if ! [[ "${{ steps.vars.outputs.components }}" =~ ^[^,]+(,[^,]+)*$ ]]; then
-            echo "::error::components must be a comma-separated list (e.g., comp1,comp2)"
-            exit 1
-          fi
 
       - name: Check if tag exists
         id: tag_exists
@@ -148,20 +133,5 @@ jobs:
             --title "Release ${{ steps.vars.outputs.git_tag }}" \
             --target ${{ github.sha }} \
             --latest
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload components
-        run: |
-          echo "${{ steps.vars.outputs.components }}" > components.txt
-
-          # Check if the file already exists in the release
-          if gh release view ${{ steps.vars.outputs.git_tag }} --json assets | jq -r '.assets[].name' | grep -q "^components.txt$"; then
-            echo "Asset components.txt exists. Deleting before re-uploading..."
-            gh release delete-asset ${{ steps.vars.outputs.git_tag }} components.txt --yes
-          fi
-
-          # Upload new asset
-          gh release upload ${{ steps.vars.outputs.git_tag }} components.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
