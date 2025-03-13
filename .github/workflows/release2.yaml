@@ -1,0 +1,102 @@
+name: Tag Commit Sha
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: "Release name for branch to be created (eg., TMS-2025-03-R1)"
+        required: true
+      ref:
+        description: "Specific git ref to tag (sha or branch)"
+        required: true
+
+  push:
+    branches:
+      - release/**
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Get branch name
+        id: branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            branch=release/${{ inputs.release_name }}
+          else
+            branch="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "branch=$branch" >> $GITHUB_OUTPUT
+
+      - name: Check if branch exists
+        id: branch_exists
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "branch_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create branch
+        if: github.event_name == 'workflow_dispatch' && steps.branch_exists.outputs.branch_exists == 'false'
+        run: |
+          git checkout -b ${{ steps.branch.outputs.branch }}
+          git push -u origin ${{ steps.branch.outputs.branch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.branch.outputs.branch }}
+
+      - name: Set tag
+        id: vars
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          LATEST_TAG=${LATEST_TAG:-"v0.0.0"}
+
+          CLEAN_TAG=$(echo "$LATEST_TAG" | sed -E 's/[-+].*//')
+
+          VERSION=$(echo "$CLEAN_TAG" | sed -E 's/^v//')
+          MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
+          MINOR=$(echo "$VERSION" | cut -d'.' -f2)
+
+          PATCH=$(echo "$VERSION" | cut -d'.' -f3)
+          PATCH=${PATCH:-0}  # Default to 0 if empty
+
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "git_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: tag_exists
+        run: |
+          TAG="${{ steps.vars.outputs.git_tag }}"
+          if git ls-remote --tags origin refs/tags/$TAG | grep -q $TAG; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag
+        if: steps.tag_exists.outputs.tag_exists == 'false'
+        run: |
+          git tag ${{ steps.vars.outputs.git_tag }}
+          git push origin ${{ steps.vars.outputs.git_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
